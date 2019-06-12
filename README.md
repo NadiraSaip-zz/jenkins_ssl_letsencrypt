@@ -20,7 +20,7 @@ sudo certbot certonly --standalone -d jenkins.example.com
 ```
 It will ask for few confirmations and email. If thee certification is generated you will see the message which will start with 
 # IMPORTANT NOTES:
-# -Congratulations! Your certificate and chain has been saved at :....
+-Congratulations! Your certificate and chain has been saved at :....
 
 The generated cert and private key path is on the following file format which you will need in next step.
 ```
