@@ -51,3 +51,59 @@ Make sure the followings are correct:
 2. The password for the PKCS12 store and the JKS store must be exactly the same. Jenkins will fail to start if it is not the case.
 3. You should probably use a different password than changeit (which is conventional knowledge for Java keystores). It will protect you if the keystore is compromised and downloaded but the password is not known. Though, in a system breach, it is wise to revoke and request    new certificates.
 4. The final keystore file is jenkins_keystore.jks.
+Now,  move the keystore to a place which can be referenced in Jenkins configuration.
+```
+mkdir -p /etc/jenkins
+cp jenkins_keystore.jks /etc/jenkins/
+
+#configure permissions to secure your keystore
+chown -R jenkins: /etc/jenkins
+chmod 700 /etc/jenkins
+chmod 600 /etc/jenkins/jenkins_keystore.jks
+```
+# Configure Jenkins to use SSL
+
+Edit /etc/sysconfig/jenkins and set the following variables.
+```
+#disable HTTP
+JENKINS_PORT="-1"
+
+#configure HTTPS
+JENKINS_HTTPS_PORT="8443"
+JENKINS_HTTPS_KEYSTORE="/etc/jenkins/jenkins_keystore.jks"
+JENKINS_HTTPS_KEYSTORE_PASSWORD="changeit"
+JENKINS_HTTPS_LISTEN_ADDRESS="127.0.0.1" #remove it if you can't access the page on web browser
+```
+# Congratulations your website is now SSL Certified! 
+If you can't have problems and can't access it follow the below troubleshooting solutions. 
+
+To learn more about these options you can execute (while Jenkins is running):
+```
+java -jar /usr/lib/jenkins/jenkins.war --help
+ps aux | grep 'jenkins\.war'
+```
+See /var/log/jenkins/jenkins.log for potential troubleshooting.
+
+# Configure iptables to port forward
+Iptables can be used to forward port 443 to 8443. This provides a better user experience since this is the standard port for HTTPS connections. To do this on a RedHat system a few things must occur:
+
+- The kernel must allow forwarding.
+- iptables needs rules for forwarding.
+- The recommendations are relevant to interface eth0. Double check you’re using the correct interface for your system.
+
+#Configure kernel to allow port forwarding  
+I have done it on AWS Consul but you can follow the below steps on CLI.
+To enable forwarding during runtime:
+```
+#allow forwarding
+sysctl -w net.ipv4.ip_forward=1
+#allow forwarding to localhost on eth0
+sysctl -w net.ipv4.conf.eth0.route_localnet=1
+```
+For forwarding settings to persist on reboot, add or change the following settings in /etc/sysctl.conf.
+
+```
+net.ipv4.ip_forward = 1
+net.ipv4.conf.eth0.route_localnet = 1
+```
+
