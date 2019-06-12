@@ -74,6 +74,18 @@ JENKINS_HTTPS_KEYSTORE="/etc/jenkins/jenkins_keystore.jks"
 JENKINS_HTTPS_KEYSTORE_PASSWORD="changeit"
 JENKINS_HTTPS_LISTEN_ADDRESS="127.0.0.1" #remove it if you can't access the page on web browser
 ```
+# Verify SSL is running
+Ensure a correct certificate chain order. The following command also accounts for Server Name Indication (SNI).
+```
+openssl s_client -connect example.com:443 -servername example.com < /dev/null
+```
+
+View certificate information of the remote service.
+```
+openssl s_client -connect example.com:443 -servername example.com < /dev/null | openssl x509 -text | less
+```
+
+
 # Congratulations your website is now SSL Certified! 
 If you can't have problems and can't access it follow the below troubleshooting solutions. 
 
@@ -106,4 +118,20 @@ For forwarding settings to persist on reboot, add or change the following settin
 net.ipv4.ip_forward = 1
 net.ipv4.conf.eth0.route_localnet = 1
 ```
+# Configure iptables
+
+Depending on how iptables is configured you may have to adapt how you insert the rules into the runtime firewall. It may be simpler to write your rules in /etc/sysconfig/iptables and reload the firewall.
+```
+#for remote connections
+iptables -t nat -A PREROUTING -i eth0 -p tcp --dport 443 -j DNAT --to-destination 127.0.0.1:8443
+iptables -A FORWARD -i eth0 -m state --state NEW -m tcp -p tcp -d 127.0.0.1 --dport 8443 -j ACCEPT
+
+#for localhost connections
+iptables -t nat -A OUTPUT -p tcp --dport 443 -d 127.0.0.1 -j DNAT --to-destination 127.0.0.1:8443
+```
+Use iptables-save to update /etc/sysconfig/iptables rules.
+
+# Repeat the steps to Verify SSL is running
+
+If you visit your secured Jenkins and find your browser is not showing a secure connection, then you’re likely missing the certificate authority certificate in your browser trust store.
 
